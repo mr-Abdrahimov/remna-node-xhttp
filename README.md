@@ -2,87 +2,86 @@
 
 <details>
   <summary>Дефолтный профиль в ремне ↓ </summary>
-  ```bash
-  {
-    "log": {
-      "loglevel": "warning"
-    },
-    "dns": {
-      "servers": [
-        {
-          "address": "https://dns.google/dns-query",
-          "skipFallback": false
-        }
-      ],
-      "queryStrategy": "UseIPv4"
-    },
-    "inbounds": [
+```bash
+{
+  "log": {
+    "loglevel": "warning"
+  },
+  "dns": {
+    "servers": [
       {
-        "tag": "Steal",
-        "port": 443,
-        "protocol": "vless",
-        "settings": {
-          "clients": [],
-          "decryption": "none"
-        },
-        "sniffing": {
-          "enabled": true,
-          "destOverride": [
-            "http",
-            "tls",
-            "quic"
-          ]
-        },
-        "streamSettings": {
-          "network": "tcp",
-          "security": "reality",
-          "realitySettings": {
-            "dest": "/dev/shm/nginx.sock",
-            "show": false,
-            "xver": 1,
-            "spiderX": "",
-            "shortIds": [
-              "7be1e9c243451b14"
-            ],
-            "privateKey": "K-KQYLqDXqPDF_rTZO8ewpEe_k8lbCdCVGXcglF7ZSo",
-            "serverNames": [
-              "aeza-node.avtlk.ru"
-            ]
-          }
-        }
+        "address": "https://dns.google/dns-query",
+        "skipFallback": false
       }
     ],
-    "outbounds": [
+    "queryStrategy": "UseIPv4"
+  },
+  "inbounds": [
+    {
+      "tag": "Steal",
+      "port": 443,
+      "protocol": "vless",
+      "settings": {
+        "clients": [],
+        "decryption": "none"
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "dest": "/dev/shm/nginx.sock",
+          "show": false,
+          "xver": 1,
+          "spiderX": "",
+          "shortIds": [
+            "7be1e9c243451b14"
+          ],
+          "privateKey": "K-KQYLqDXqPDF_rTZO8ewpEe_k8lbCdCVGXcglF7ZSo",
+          "serverNames": [
+            "aeza-node.avtlk.ru"
+          ]
+        }
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "DIRECT",
+      "protocol": "freedom"
+    },
+    {
+      "tag": "BLOCK",
+      "protocol": "blackhole"
+    }
+  ],
+  "routing": {
+    "rules": [
       {
-        "tag": "DIRECT",
-        "protocol": "freedom"
+        "ip": [
+          "geoip:private"
+        ],
+        "type": "field",
+        "outboundTag": "BLOCK"
       },
       {
-        "tag": "BLOCK",
-        "protocol": "blackhole"
+        "type": "field",
+        "protocol": [
+          "bittorrent"
+        ],
+        "outboundTag": "BLOCK"
       }
-    ],
-    "routing": {
-      "rules": [
-        {
-          "ip": [
-            "geoip:private"
-          ],
-          "type": "field",
-          "outboundTag": "BLOCK"
-        },
-        {
-          "type": "field",
-          "protocol": [
-            "bittorrent"
-          ],
-          "outboundTag": "BLOCK"
-        }
-      ]
-    }
+    ]
   }
-  
-  ```
+}
+```
 </details>
 
 Выполните следующую команду для начала установки:
@@ -162,6 +161,7 @@ echo "=== ГОТОВО! ==="
 echo "Проверьте:"
 echo "ufw status"
 echo "sudo fail2ban-client status sshd"
+```
 </details>
 
 ```

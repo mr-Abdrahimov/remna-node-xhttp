@@ -1,6 +1,7 @@
 # remna-xhttp
 
-Дефолтный профиль в ремне:
+<details>
+  <summary>Дефолтный профиль в ремне ↓ </summary>
 ```bash
 {
   "log": {
@@ -82,7 +83,7 @@
 }
 
 ```
-
+</details>
 
 Выполните следующую команду для начала установки:
 ```bash
@@ -90,7 +91,10 @@ bash <(curl -Ls https://raw.githubusercontent.com/eGamesAPI/remnawave-reverse-pr
 ```
 
 
-Правим docker-compose ноды в случае если необходимо сменить порт ноды
+
+
+<details>
+  <summary>Правим docker-compose ноды в случае если необходимо сменить порт ноды ↓ </summary>
 ```bash
 cd /opt/remnawave/ && nano docker-compose.yml && docker compose up -d
 ```
@@ -158,5 +162,6 @@ echo "=== ГОТОВО! ==="
 echo "Проверьте:"
 echo "ufw status"
 echo "sudo fail2ban-client status sshd"
+</details>
 
 ```

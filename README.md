@@ -90,6 +90,12 @@ bash <(curl -Ls https://raw.githubusercontent.com/eGamesAPI/remnawave-reverse-pr
 ```
 
 
+Правим docker-compose ноды в случае если необходимо сменить порт ноды
+```bash
+cd /opt/remnawave/ && nano docker-compose.yml && docker compose up -d
+```
+
+
 Выполните следующую команду для закрытия всех доступов, пингов и тд:
 ```bash
 #!/bin/bash

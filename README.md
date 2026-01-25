@@ -2,6 +2,7 @@
 
 <details>
   <summary>Дефолтный профиль в ремне ↓ </summary>
+  
 ```bash
 {
   "log": {
@@ -82,6 +83,7 @@
   }
 }
 ```
+
 </details>
 
 Выполните следующую команду для начала установки:
@@ -97,6 +99,22 @@ bash <(curl -Ls https://raw.githubusercontent.com/eGamesAPI/remnawave-reverse-pr
 ```bash
 cd /opt/remnawave/ && nano docker-compose.yml && docker compose up -d
 ```
+
+<details>
+  <summary>↓ XHTTP nginx reverse proxy:</summary>
+
+```nginx
+        location /xhttppath/ {
+            client_max_body_size 0;
+            grpc_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            client_body_timeout 5m;
+            grpc_read_timeout 315;
+            grpc_send_timeout 5m;
+            grpc_pass unix:/dev/shm/xrxh.socket;
+        }
+```
+
+</details>
 
 
 Выполните следующую команду для закрытия всех доступов, пингов и тд:
@@ -162,6 +180,5 @@ echo "Проверьте:"
 echo "ufw status"
 echo "sudo fail2ban-client status sshd"
 ```
-</details>
 
-```
+</details>

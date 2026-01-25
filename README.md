@@ -99,6 +99,7 @@ bash <(curl -Ls https://raw.githubusercontent.com/eGamesAPI/remnawave-reverse-pr
 ```bash
 cd /opt/remnawave/ && nano docker-compose.yml && docker compose up -d
 ```
+</details>
 
 <details>
   <summary>↓ XHTTP nginx reverse proxy:</summary>

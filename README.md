@@ -118,7 +118,9 @@ cd /opt/remnawave/ && nano docker-compose.yml && docker compose up -d
 </details>
 
 
-Выполните следующую команду для закрытия всех доступов, пингов и тд:
+<details>
+  <summary>↓ Выполните следующую команду для закрытия всех доступов, пингов и тд:</summary>
+
 ```bash
 #!/bin/bash
 

@@ -255,7 +255,7 @@ install_packages() {
     sysctl -p >/dev/null
 
     # UFW
-    if ! ufw allow 22/tcp comment 'SSH' || ! ufw allow 443/tcp comment 'HTTPS' || ! ufw --force enable; then
+    if ! ufw allow 22 comment 'SSH' || ! ufw allow 443 comment 'HTTPS' || ! ufw --force enable; then
         echo -e "${COLOR_RED}${LANG[ERROR_CONFIGURE_UFW]}${COLOR_RESET}" >&2
         return 1
     fi

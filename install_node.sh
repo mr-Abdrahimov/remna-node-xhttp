@@ -1125,7 +1125,7 @@ server {
 
     location /xhttppath/ {
         client_max_body_size 0;
-        grpc_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        grpc_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         client_body_timeout 5m;
         grpc_read_timeout 315;
         grpc_send_timeout 5m;

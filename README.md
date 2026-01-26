@@ -1,9 +1,100 @@
-# remna-node-xhttp
+# 🚀 Remnawave Node + xHTTP
+
+<div align="center">
+
+**Автоматическая установка ноды Remnawave с поддержкой xHTTP протокола**
+
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Remnawave](https://img.shields.io/badge/Remnawave-Node-green.svg)](https://github.com/remnawave)
+[![xHTTP](https://img.shields.io/badge/Protocol-xHTTP-orange.svg)](https://github.com/XTLS/Xray-core)
+
+</div>
+
+---
+
+## 📋 Содержание
+
+- [Описание](#-описание)
+- [Что устанавливается](#-что-устанавливается)
+- [Быстрая установка](#-быстрая-установка)
+- [Конфигурация профиля в панели](#-конфигурация-профиля-в-панели)
+- [Настройка хоста в панели](#-настройка-хоста-в-панели)
+- [Настройки xHTTP](#-настройки-xhttp)
+- [Дополнительно](#-дополнительно)
+
+---
+
+## 📖 Описание
+
+Этот скрипт автоматизирует установку и настройку ноды **Remnawave** с поддержкой протокола **xHTTP**. 
+
+Включает в себя:
+- Установку Docker и зависимостей
+- Настройку SSL сертификатов (Cloudflare DNS / ACME HTTP / Gcore DNS)
+- Конфигурацию Nginx с Reality и xHTTP
+- Автоматическую установку маскировочного сайта
+- Комплексную настройку безопасности сервера
+
+---
+
+## 🎯 Что устанавливается
+
+### Основные компоненты:
+- ✅ **Docker** и **Docker Compose**
+- ✅ **Nginx** (для Reality и xHTTP)
+- ✅ **Remnawave Node** (последняя версия)
+- ✅ **Certbot** с поддержкой DNS-плагинов
+- ✅ **UFW Firewall** с настроенными правилами
+- ✅ **Fail2Ban** для защиты SSH
+- ✅ **Anti-Ping** защита
+- ✅ **BBR** TCP congestion control
+- ✅ Случайный HTML шаблон для маскировки
+
+### Автоматическая настройка безопасности:
+- 🔒 **UFW**: разрешены только SSH (22), HTTPS (443) и порт ноды
+- 🔒 **Fail2Ban**: защита от брутфорса SSH (1 попытка = бан на 12 часов)
+- 🔒 **Anti-Ping**: ping доступен только с IP панели
+- 🔒 **Автообновления**: unattended-upgrades для системных пакетов
+
+---
+
+## ⚡ Быстрая установка
+
+### Требования:
+- **OS**: Debian 11/12 или Ubuntu 22.04/24.04
+- **Права**: Root доступ
+- **Домен**: Настроенный A-запись, указывающий на IP сервера ноды
+
+### Перед установкой:
+1. Создайте поддомен для ноды (например: `node.example.com`)
+2. Настройте A-запись в DNS, чтобы она указывала на IP вашего сервера
+3. ⚠️ **Для Reality**: отключите Cloudflare proxy (серая тучка)
+
+### Команда установки:
+
+```bash
+bash <(curl -Ls https://raw.githubusercontent.com/mr-Abdrahimov/remna-node-xhttp/refs/heads/main/install_node.sh)
+```
+
+### Что будет запрошено при установке:
+
+1. **Домен ноды** (например: `node.example.com`)
+2. **IP адрес панели** (например: `10.20.30.40`)
+3. **Порт ноды** (по умолчанию: `2222`, можно изменить)
+4. **Сертификат от панели** (вставьте и нажмите Enter 2 раза)
+5. **Метод получения SSL**:
+   - Cloudflare DNS (поддерживает wildcard)
+   - ACME HTTP-01
+   - Gcore DNS (поддерживает wildcard)
+
+---
+
+## 🔧 Конфигурация профиля в панели
 
 <details>
-  <summary>Дефолтный профиль в ремне ↓ </summary>
-  
-```bash
+<summary>📄 <b>Дефолтный профиль для ноды с xHTTP</b> (нажмите для раскрытия)</summary>
+
+```json
 {
   "log": {
     "loglevel": "warning"
@@ -45,9 +136,9 @@
           "shortIds": [
             "7be1e9c243451b14"
           ],
-          "privateKey": "K-KQYLqDXqPDF_rTZO8ewpEe_k9lbCdCVGXcglF7ZSo",
+          "privateKey": "ВАШ_ПРИВАТНЫЙ_КЛЮЧ",
           "serverNames": [
-            "aeza-node.avtlk.ru"
+            "ВАШ_ДОМЕН_НОДЫ"
           ]
         }
       }
@@ -118,27 +209,31 @@
 
 </details>
 
+---
 
-## Установка node + nginx + xhttp + защита.
-### Перед установкой заранее создайте поддомен
-```bash
-bash <(curl -Ls https://raw.githubusercontent.com/mr-Abdrahimov/remna-node-xhttp/refs/heads/main/install_node.sh)
-```
+## 🌐 Настройка хоста в панели
 
-### Настройка хоста в ремне
-```
-Security Layer: TLS (Transport Layer Security)
-ALPN: h2,http/1.1
-Отпечаток: любой
-SNI, Хост (свой поддомен): node.example.ru
-```
+После установки ноды необходимо настроить хост в панели Remnawave:
 
-Путь
-```bash
-/xhttppath/
-```
-Xray Json & Raw -> xHTTP
-```bash
+### Основные параметры:
+
+| Параметр | Значение |
+|----------|----------|
+| **Security Layer** | `TLS (Transport Layer Security)` |
+| **ALPN** | `h2,http/1.1` |
+| **Отпечаток** | Любой (например: `chrome`, `firefox`) |
+| **SNI / Хост** | Ваш домен ноды (например: `node.example.com`) |
+| **Путь** | `/xhttppath/` |
+
+---
+
+## 📡 Настройки xHTTP
+
+### Xray JSON Configuration (Raw → xHTTP)
+
+В панели Remnawave в разделе **Xray Json & Raw → xHTTP** вставьте:
+
+```json
 {
   "xmux": {
     "cMaxReuseTimes": 0,
@@ -156,87 +251,110 @@ Xray Json & Raw -> xHTTP
 }
 ```
 
+### Описание параметров:
 
+- **maxConcurrency**: `16-32` - количество одновременных мультиплексных соединений
+- **hMaxRequestTimes**: `600-900` - максимальное количество запросов на соединение
+- **hMaxReusableSecs**: `1800-3000` - максимальное время повторного использования соединения (в секундах)
+- **xPaddingBytes**: `100-1000` - случайный размер паддинга для обфускации трафика
+- **scStreamUpServerSecs**: `20-80` - время потоковой передачи на сервер
 
+---
 
+## 🛠️ Дополнительно
+
+### Изменение порта ноды (после установки)
 
 <details>
-  <summary>Правим docker-compose ноды в случае если необходимо сменить порт ноды ↓ </summary>
-  
+<summary>Если необходимо изменить порт ноды после установки</summary>
+
 ```bash
-cd /opt/remnawave/ && nano docker-compose.yml && docker compose up -d
+# Редактируем docker-compose.yml
+cd /opt/remnawave/
+nano docker-compose.yml
+
+# Найдите строку:
+# - NODE_PORT=2222
+# Измените на нужный порт, например:
+# - NODE_PORT=3333
+
+# Сохраните (Ctrl+O, Enter) и выйдите (Ctrl+X)
+
+# Примените изменения
+docker compose up -d
+
+# Обновите правило UFW
+ufw delete allow from IP_ПАНЕЛИ to any port 2222
+ufw allow from IP_ПАНЕЛИ to any port 3333
+ufw reload
 ```
 
 </details>
 
-
-
-<details>
-  <summary>↓ Выполните следующую команду для закрытия всех доступов, пингов и тд:</summary>
+### Проверка статуса
 
 ```bash
-#!/bin/bash
+# Статус Docker контейнеров
+cd /opt/remnawave && docker compose ps
 
-# Запрос данных
-echo "=== Настройка безопасности ==="
-read -p "Введите IP хосты с ремной для разрешения (например, 0.0.0.0): " ALLOW_IP
-read -p "Введите порт ноды для разрешения (например, 2222): " ALLOW_PORT
+# Логи ноды
+cd /opt/remnawave && docker compose logs -f remnanode
 
-echo ""
-echo "IP: $ALLOW_IP"
-echo "Порт: $ALLOW_PORT"
-echo ""
-echo "Нажмите ENTER для подтверждения или Ctrl+C для отмены"
-read DUMMY
+# Логи Nginx
+cd /opt/remnawave && docker compose logs -f remnawave-nginx
 
-# Включаем UFW
-echo "Включаем UFW..."
-ufw enable
-ufw allow OpenSSH
-ufw allow 443
-ufw allow from "$ALLOW_IP" to any port "$ALLOW_PORT"
+# Статус UFW
+ufw status verbose
 
-# Включаем защиту SSH
-echo "Устанавливаем Fail2Ban..."
-sudo apt install fail2ban -y
-cat > /etc/fail2ban/jail.d/jail.local << EOF
-[DEFAULT]
-ignoreip=
-[sshd]
-enabled=true
-findtime=120
-maxretry=1
-bantime=43200
-EOF
-
-systemctl restart fail2ban
-systemctl status fail2ban
-fail2ban-client status sshd
-
-# Выключаем ping сервера (с исключением)
-echo "Настраиваем Anti-Ping..."
-RULE1="-A ufw-before-input -s $ALLOW_IP -p icmp --icmp-type echo-request -j ACCEPT"
-RULE2="-A ufw-before-input -p icmp --icmp-type echo-request -j DROP"
-FILE="/etc/ufw/before.rules"
-
-if ! grep -q "$RULE1" "$FILE"; then
-    sudo sed -i "/# End required lines/i $RULE1" "$FILE"
-    echo "Разрешение ping для $ALLOW_IP добавлено"
-fi
-if ! grep -q "$RULE2" "$FILE"; then
-    sudo sed -i "/# End required lines/i $RULE2" "$FILE"
-    echo "Блокировка ping для остальных добавлена"
-fi
-
-sudo ufw reload
-
-echo ""
-echo "=== ГОТОВО! ==="
-echo "Проверьте:"
-echo "ufw status"
-echo "sudo fail2ban-client status sshd"
+# Статус Fail2Ban
+sudo fail2ban-client status sshd
 ```
 
-</details>
+### Обновление ноды
 
-#remna #remnawave #remnanode #xhttp
+```bash
+cd /opt/remnawave
+docker compose pull
+docker compose up -d
+```
+
+### Переустановка случайного шаблона сайта
+
+```bash
+cd /opt/remnawave
+rm -rf /var/www/html/*
+# Затем запустите функцию randomhtml из скрипта
+# или установите шаблон вручную в /var/www/html/
+```
+
+---
+
+## 📝 Примечания
+
+- ⚠️ **Важно**: После установки сохраните сертификат от панели в надёжном месте
+- 🔐 Fail2Ban банит на **12 часов** после **1 неудачной** попытки входа по SSH
+- 🌐 Для Reality обязательно отключите Cloudflare proxy (серая тучка)
+- 📊 Порт ноды по умолчанию **2222**, но вы можете указать любой при установке
+- 🔄 SSL сертификаты автоматически обновляются через cron каждое воскресенье в 5:00
+
+---
+
+## 🔗 Полезные ссылки
+
+- [Remnawave](https://github.com/remnawave)
+- [Xray-core](https://github.com/XTLS/Xray-core)
+- [xHTTP Protocol](https://github.com/XTLS/Xray-core/discussions/3711)
+
+---
+
+## 🏷️ Теги
+
+`#remna` `#remnawave` `#remnanode` `#xhttp` `#reality` `#vless` `#xray` `#vpn` `#proxy`
+
+---
+
+<div align="center">
+
+**Создано с ❤️ для сообщества Remnawave**
+
+</div>

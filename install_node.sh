@@ -1123,6 +1123,10 @@ server {
     ssl_certificate_key "/etc/nginx/ssl/$NODE_CERT_DOMAIN/privkey.pem";
     ssl_trusted_certificate "/etc/nginx/ssl/$NODE_CERT_DOMAIN/fullchain.pem";
 
+    root /var/www/html;
+    index index.html;
+    add_header X-Robots-Tag "noindex, nofollow, noarchive, nosnippet, noimageindex" always;
+
     location /xhttppath/ {
         client_max_body_size 0;
         grpc_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -1131,10 +1135,6 @@ server {
         grpc_send_timeout 5m;
         grpc_pass unix:/dev/shm/xrxh.socket;
     }
-
-    root /var/www/html;
-    index index.html;
-    add_header X-Robots-Tag "noindex, nofollow, noarchive, nosnippet, noimageindex" always;
 }
 
 server {

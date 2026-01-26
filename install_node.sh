@@ -255,10 +255,10 @@ install_packages() {
     sysctl -p >/dev/null
 
     # UFW
-    if ! ufw allow 22 comment 'SSH' || ! ufw allow 443 comment 'HTTPS' || ! ufw --force enable; then
-        echo -e "${COLOR_RED}${LANG[ERROR_CONFIGURE_UFW]}${COLOR_RESET}" >&2
-        return 1
-    fi
+    # if ! ufw allow 22 comment 'SSH' || ! ufw allow 443 comment 'HTTPS' || ! ufw --force enable; then
+    #     echo -e "${COLOR_RED}${LANG[ERROR_CONFIGURE_UFW]}${COLOR_RESET}" >&2
+    #     return 1
+    # fi
 
     # Unattended-upgrades
     echo 'Unattended-Upgrade::Mail "root";' >> /etc/apt/apt.conf.d/50unattended-upgrades

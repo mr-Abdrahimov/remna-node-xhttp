@@ -125,6 +125,26 @@ bash <(curl -Ls https://raw.githubusercontent.com/mr-Abdrahimov/remna-xhttp/refs
 ```
 
 
+Xray Json & Raw xHTTP
+```bash
+{
+  "xmux": {
+    "cMaxReuseTimes": 0,
+    "maxConcurrency": "16-32",
+    "maxConnections": 0,
+    "hKeepAlivePeriod": 0,
+    "hMaxRequestTimes": "600-900",
+    "hMaxReusableSecs": "1800-3000"
+  },
+  "noGRPCHeader": false,
+  "xPaddingBytes": "100-1000",
+  "scMaxEachPostBytes": 1000000,
+  "scMinPostsIntervalMs": 30,
+  "scStreamUpServerSecs": "20-80"
+}
+```
+
+
 
 
 

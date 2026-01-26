@@ -119,7 +119,8 @@
 </details>
 
 
-Установка node + nginx + xhttp + защита
+## Установка node + nginx + xhttp + защита.
+### Перед установкой заранее создайте поддомен
 ```bash
 bash <(curl -Ls https://raw.githubusercontent.com/mr-Abdrahimov/remna-node-xhttp/refs/heads/main/install_node.sh)
 ```
@@ -237,3 +238,5 @@ echo "sudo fail2ban-client status sshd"
 ```
 
 </details>
+
+#remna #remnawave #remnanode #xhttp

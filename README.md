@@ -124,7 +124,15 @@
 bash <(curl -Ls https://raw.githubusercontent.com/mr-Abdrahimov/remna-xhttp/refs/heads/main/install_node.sh)
 ```
 
+Security Layer: TLS (Transport Layer Security)
+ALPN: h2,http/1.1
+Отпечаток: любой
+SNI, Хост (свой поддомен): node.example.ru
 
+Путь
+```bash
+/xhttppath/
+```
 Xray Json & Raw xHTTP
 ```bash
 {

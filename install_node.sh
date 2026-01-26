@@ -94,6 +94,16 @@ declare -A LANG=(
     [NODE_NOT_CONNECTED]="Нода не подключена после %d попыток!"
     [CHECK_CONFIG]="Проверьте конфигурацию или перезапустите панель."
     [ERROR_PARSING_CERT]="Ошибка парсинга сертификата"
+    [SECURITY_SETUP]="Настройка безопасности сервера"
+    [ENABLE_UFW]="Включаем UFW..."
+    [INSTALL_FAIL2BAN]="Устанавливаем Fail2Ban..."
+    [SETUP_ANTI_PING]="Настраиваем Anti-Ping..."
+    [PING_ALLOWED_FOR]="Разрешение ping для"
+    [PING_BLOCKED_FOR_OTHERS]="Блокировка ping для остальных добавлена"
+    [SECURITY_COMPLETE]="Настройка безопасности завершена!"
+    [CHECK_UFW_STATUS]="Проверьте статус UFW:"
+    [CHECK_FAIL2BAN_STATUS]="Проверьте статус Fail2Ban:"
+    [ERROR_INSTALL_FAIL2BAN]="Ошибка: Не удалось установить Fail2Ban"
 )
 
 question() {
@@ -957,6 +967,74 @@ services:
 EOL
 }
 
+setup_security() {
+    local PANEL_IP=$1
+    local NODE_PORT=$2
+
+    echo -e ""
+    echo -e "${COLOR_GREEN}========================================${COLOR_RESET}"
+    echo -e "${COLOR_GREEN}  ${LANG[SECURITY_SETUP]}${COLOR_RESET}"
+    echo -e "${COLOR_GREEN}========================================${COLOR_RESET}"
+    echo -e ""
+    echo -e "${COLOR_YELLOW}IP панели: $PANEL_IP${COLOR_RESET}"
+    echo -e "${COLOR_YELLOW}Порт ноды: $NODE_PORT${COLOR_RESET}"
+    echo -e ""
+
+    # Включаем UFW (уже настроено в install_packages, но добавляем правила)
+    echo -e "${COLOR_YELLOW}${LANG[ENABLE_UFW]}${COLOR_RESET}"
+    ufw --force enable > /dev/null 2>&1
+    ufw allow OpenSSH > /dev/null 2>&1
+    ufw allow 443 > /dev/null 2>&1
+    ufw allow from "$PANEL_IP" to any port "$NODE_PORT" > /dev/null 2>&1
+    ufw reload > /dev/null 2>&1
+
+    # Устанавливаем Fail2Ban
+    echo -e "${COLOR_YELLOW}${LANG[INSTALL_FAIL2BAN]}${COLOR_RESET}"
+    if ! apt-get install -y fail2ban > /dev/null 2>&1; then
+        echo -e "${COLOR_RED}${LANG[ERROR_INSTALL_FAIL2BAN]}${COLOR_RESET}"
+        return 1
+    fi
+
+    # Настраиваем Fail2Ban
+    cat > /etc/fail2ban/jail.d/jail.local << EOF
+[DEFAULT]
+ignoreip=
+[sshd]
+enabled=true
+findtime=120
+maxretry=1
+bantime=43200
+EOF
+
+    systemctl restart fail2ban > /dev/null 2>&1
+    systemctl enable fail2ban > /dev/null 2>&1
+
+    # Настраиваем Anti-Ping
+    echo -e "${COLOR_YELLOW}${LANG[SETUP_ANTI_PING]}${COLOR_RESET}"
+    local RULE1="-A ufw-before-input -s $PANEL_IP -p icmp --icmp-type echo-request -j ACCEPT"
+    local RULE2="-A ufw-before-input -p icmp --icmp-type echo-request -j DROP"
+    local FILE="/etc/ufw/before.rules"
+
+    if ! grep -q "$RULE1" "$FILE"; then
+        sudo sed -i "/# End required lines/i $RULE1" "$FILE"
+        echo -e "${COLOR_GREEN}${LANG[PING_ALLOWED_FOR]} $PANEL_IP${COLOR_RESET}"
+    fi
+    if ! grep -q "$RULE2" "$FILE"; then
+        sudo sed -i "/# End required lines/i $RULE2" "$FILE"
+        echo -e "${COLOR_GREEN}${LANG[PING_BLOCKED_FOR_OTHERS]}${COLOR_RESET}"
+    fi
+
+    sudo ufw reload > /dev/null 2>&1
+
+    echo -e ""
+    echo -e "${COLOR_GREEN}${LANG[SECURITY_COMPLETE]}${COLOR_RESET}"
+    echo -e ""
+    echo -e "${COLOR_YELLOW}${LANG[CHECK_UFW_STATUS]} ${COLOR_WHITE}ufw status${COLOR_RESET}"
+    echo -e "${COLOR_YELLOW}${LANG[CHECK_FAIL2BAN_STATUS]} ${COLOR_WHITE}sudo fail2ban-client status sshd${COLOR_RESET}"
+    echo -e ""
+    sleep 3
+}
+
 installation_node() {
     echo -e "${COLOR_YELLOW}${LANG[INSTALLING_NODE]}${COLOR_RESET}"
     sleep 1
@@ -1068,9 +1146,6 @@ server {
 }
 EOL
 
-    ufw allow from $PANEL_IP to any port $NODE_PORT > /dev/null 2>&1
-    ufw reload > /dev/null 2>&1
-
     echo -e "${COLOR_YELLOW}${LANG[STARTING_NODE]}${COLOR_RESET}"
     sleep 3
     cd /opt/remnawave
@@ -1101,6 +1176,9 @@ EOL
         fi
         ((attempt++))
     done
+
+    # Настройка безопасности после успешной установки ноды
+    setup_security "$PANEL_IP" "$NODE_PORT"
 
 }
 

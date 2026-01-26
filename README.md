@@ -45,10 +45,42 @@
           "shortIds": [
             "7be1e9c243451b14"
           ],
-          "privateKey": "K-KQYLqDXqPDF_rTZO8ewpEe_k8lbCdCVGXcglF7ZSo",
+          "privateKey": "K-KQYLqDXqPDF_rTZO8ewpEe_k9lbCdCVGXcglF7ZSo",
           "serverNames": [
             "aeza-node.avtlk.ru"
           ]
+        }
+      }
+    },
+    {
+      "tag": "XHTTP",
+      "listen": "/dev/shm/xrxh.socket,0666",
+      "protocol": "vless",
+      "settings": {
+        "clients": [],
+        "fallbacks": [],
+        "decryption": "none"
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ]
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "xhttpSettings": {
+          "mode": "auto",
+          "path": "/xhttppath/",
+          "extra": {
+            "noSSEHeader": true,
+            "xPaddingBytes": "100-1000",
+            "scMaxBufferedPosts": 30,
+            "scMaxEachPostBytes": 1000000,
+            "scStreamUpServerSecs": "20-80"
+          }
         }
       }
     }
@@ -86,10 +118,12 @@
 
 </details>
 
-Выполните следующую команду для начала установки:
+
+Установка node+nginx+xhttp
 ```bash
-bash <(curl -Ls https://raw.githubusercontent.com/eGamesAPI/remnawave-reverse-proxy/refs/heads/main/install_remnawave.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/mr-Abdrahimov/remna-xhttp/refs/heads/main/install_node.sh)
 ```
+
 
 
 

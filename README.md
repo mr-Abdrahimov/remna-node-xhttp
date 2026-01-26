@@ -1,4 +1,4 @@
-# remna-xhttp
+# remna-node-xhttp
 
 <details>
   <summary>Дефолтный профиль в ремне ↓ </summary>
@@ -121,7 +121,7 @@
 
 Установка node + nginx + xhttp + защита
 ```bash
-bash <(curl -Ls https://raw.githubusercontent.com/mr-Abdrahimov/remna-xhttp/refs/heads/main/install_node.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/mr-Abdrahimov/remna-node-xhttp/refs/heads/main/install_node.sh)
 ```
 
 ### Настройка хоста в ремне

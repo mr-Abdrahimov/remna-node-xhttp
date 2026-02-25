@@ -1079,6 +1079,8 @@ installation_node() {
   remnanode:
     image: remnawave/node:latest
     container_name: remnanode
+    cap_add:
+      - NET_ADMIN
     hostname: remnanode
     restart: always
     ulimits:

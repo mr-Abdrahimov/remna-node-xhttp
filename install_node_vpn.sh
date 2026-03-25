@@ -224,13 +224,13 @@ cfg = {
             {
                 "type": "field",
                 "domain": [
-                    # Domain-list-community (dlc.dat) groups for Russian destinations.
-                    # Names are provided by v2fly/domain-list-community.
-                    "geosite:geolocation-ru",
-                    "geosite:category-ru"
+                    # Route RU/SU/RF domains directly (reliable; no geosite tag dependency).
+                    "regexp:^(.+\\\\.)?ru$",
+                    "regexp:^(.+\\\\.)?su$",
+                    "regexp:^(.+\\\\.)?xn--p1ai$"
                 ],
                 "outboundTag": "DIRECT",
-                "ruleTag": "direct-geosite-ru"
+                "ruleTag": "direct-ru-tlds"
             },
             {
                 "type": "field",

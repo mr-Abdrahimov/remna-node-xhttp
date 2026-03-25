@@ -352,6 +352,8 @@ sni = q1("sni")
 pbk = q1("pbk")
 # sid parameter can be present but empty (e.g. "sid=#Name").
 # Treat empty as "no shortId" and actively clear config.
+# Some subscription links have `sid` empty or even missing.
+# Stale shortId breaks REALITY, so we clear it unless an explicit non-empty sid is provided.
 sid = q1("sid", None)
 spx = q1("spx", "/")
 
@@ -385,12 +387,11 @@ if sni:
     rs["serverName"] = sni
 if pbk:
     rs["publicKey"] = pbk
-# Apply / clear shortId explicitly:
-if sid is not None:
-    if sid == "":
-        rs.pop("shortId", None)
-    else:
-        rs["shortId"] = sid
+# Apply / clear shortId explicitly (avoid stale value):
+if sid is None or sid == "":
+    rs.pop("shortId", None)
+else:
+    rs["shortId"] = sid
 if spx is not None:
     rs["spiderX"] = spx
 

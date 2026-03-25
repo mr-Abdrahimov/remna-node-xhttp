@@ -65,6 +65,25 @@
 - **Права**: Root доступ
 - **Домен**: Настроенный A-запись, указывающий на IP сервера ноды
 
+### Установка с VPN (xray-vpn)
+
+Этот вариант поднимает дополнительный сервис **`xray-vpn`** и позволяет:
+- выбирать апстрим **VLESS+Reality** (из `vless://...` или ссылки подписки)
+- перезапускать **`xray-vpn`** после смены VPN (чтобы конфиг точно применился)
+- управлять тем, что идёт **напрямую** и что через **VPN**, через routing в профиле Remnawave и `xray-vpn`
+
+Команда:
+
+```bash
+curl -fsSL "https://raw.githubusercontent.com/mr-Abdrahimov/remna-xhttp/refs/heads/main/install_node_vpn.sh" -o /root/install_node_vpn.sh
+chmod +x /root/install_node_vpn.sh
+sudo bash /root/install_node_vpn.sh
+```
+
+После запуска появится меню:
+- **1) Установить**: установка ноды как обычно + создание/запуск `xray-vpn`
+- **2) Редактировать VPN**: вставляете ссылку подписки (`https://...`) или `vless://...`, выбираете нужный VLESS, скрипт обновляет `/opt/remnawave/xray-vpn/config.json` и перезапускает `xray-vpn`
+
 ### Перед установкой:
 1. Создайте поддомен для ноды (например: `node.example.com`)
 2. Настройте A-запись в DNS, чтобы она указывала на IP вашего сервера

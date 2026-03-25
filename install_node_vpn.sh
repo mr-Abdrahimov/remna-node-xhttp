@@ -24,17 +24,6 @@ GEOIP_FILE="${XRAY_DIR}/geoip.dat"
 
 OVERRIDE_COMPOSE_FILE="${REMNA_DIR}/docker-compose.vpn.yml"
 
-# Your VLESS+Reality parameters extracted from the URL you provided.
-VLESS_UUID="d3958b70-9432-4c84-9ced-8f72abbc8a00"
-VLESS_HOST="polka.de1beast3xui.ru"
-VLESS_PORT="443"
-VLESS_FLOW="xtls-rprx-vision"
-REALITY_FP="qq"
-REALITY_SNI="google.com"
-REALITY_PBK="3x-xcM-iAp9rXbRh1QpCMQxAArVh2zHHtdrR-8s9EVs"
-REALITY_SID="c52dc1b8b50fe1e3"
-REALITY_SPX="/"
-
 SOCKS_LISTEN="127.0.0.1"
 SOCKS_PORT="1080"
 HTTP_LISTEN="127.0.0.1"
@@ -170,7 +159,6 @@ generate_xray_config() {
 
   echo "Generating Xray-core config..."
   export XRAY_DIR
-  export VLESS_UUID VLESS_HOST VLESS_PORT VLESS_FLOW REALITY_FP REALITY_SNI REALITY_PBK REALITY_SID REALITY_SPX
   export SOCKS_LISTEN SOCKS_PORT HTTP_LISTEN HTTP_PORT
   python3 - <<'PY'
 import json
@@ -178,16 +166,6 @@ import os
 from pathlib import Path
 
 xray_dir = os.environ["XRAY_DIR"]
-
-uuid = os.environ["VLESS_UUID"]
-host = os.environ["VLESS_HOST"]
-port = int(os.environ["VLESS_PORT"])
-flow = os.environ["VLESS_FLOW"]
-fp = os.environ["REALITY_FP"]
-sni = os.environ["REALITY_SNI"]
-pbk = os.environ["REALITY_PBK"]
-sid = os.environ["REALITY_SID"]
-spx = os.environ["REALITY_SPX"]
 
 socks_listen = os.environ["SOCKS_LISTEN"]
 socks_port = int(os.environ["SOCKS_PORT"])
@@ -227,36 +205,6 @@ cfg = {
         }
     ],
     "outbounds": [
-        {
-            "tag": "VPN",
-            "protocol": "vless",
-            "settings": {
-                "vnext": [
-                    {
-                        "address": host,
-                        "port": port,
-                        "users": [
-                            {
-                                "id": uuid,
-                                "encryption": "none",
-                                "flow": flow
-                            }
-                        ]
-                    }
-                ]
-            },
-            "streamSettings": {
-                "network": "tcp",
-                "security": "reality",
-                "realitySettings": {
-                    "fingerprint": fp,
-                    "serverName": sni,
-                    "publicKey": pbk,
-                    "shortId": sid,
-                    "spiderX": spx
-                }
-            }
-        },
         {"tag": "DIRECT", "protocol": "freedom"}
     ],
     "routing": {
@@ -364,7 +312,24 @@ for o in cfg.get("outbounds", []):
         vpn = o
         break
 if vpn is None:
-    raise SystemExit("Outbound tag VPN not found in config")
+    vpn = {
+        "tag": "VPN",
+        "protocol": "vless",
+        "settings": {"vnext": [{"address": "", "port": 443, "users": [{}]}]},
+        "streamSettings": {"network": "tcp", "security": "reality", "realitySettings": {}},
+    }
+    cfg.setdefault("outbounds", []).append(vpn)
+
+    # Ensure routing has a catch-all to VPN so the split actually works.
+    routing = cfg.setdefault("routing", {"domainStrategy": "IPIfNonMatch", "rules": []})
+    rules = routing.setdefault("rules", [])
+    if not any(r.get("outboundTag") == "VPN" for r in rules):
+        rules.append({
+            "type": "field",
+            "network": "tcp,udp",
+            "outboundTag": "VPN",
+            "ruleTag": "default-to-vpn"
+        })
 
 vpn.setdefault("settings", {}).setdefault("vnext", [{}])
 vnext0 = vpn["settings"]["vnext"][0]

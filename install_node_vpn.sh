@@ -19,6 +19,8 @@ REMNA_DIR="/opt/remnawave"
 XRAY_DIR="${REMNA_DIR}/xray-vpn"
 DOMAIN_LIST_URL="https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Russia/inside-raw.lst"
 DOMAIN_LIST_FILE="${XRAY_DIR}/inside-raw.lst"
+GEOSITE_URL="https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat"
+GEOSITE_FILE="${XRAY_DIR}/geosite.dat"
 
 OVERRIDE_COMPOSE_FILE="${REMNA_DIR}/docker-compose.vpn.yml"
 
@@ -81,6 +83,9 @@ generate_xray_config() {
 
   echo "Downloading domain list..."
   curl -fsSL "$DOMAIN_LIST_URL" -o "$DOMAIN_LIST_FILE"
+
+  echo "Downloading geosite database (dlc.dat)..."
+  curl -fsSL "$GEOSITE_URL" -o "$GEOSITE_FILE"
 
   echo "Generating Xray-core config..."
   export DOMAIN_LIST_FILE XRAY_DIR
@@ -195,6 +200,11 @@ cfg = {
         "rules": [
             {
                 "type": "field",
+                "domain": ["geosite:discord"],
+                "outboundTag": "VPN"
+            },
+            {
+                "type": "field",
                 "domain": domain_matchers,
                 "outboundTag": "VPN"
             }
@@ -218,8 +228,11 @@ services:
     container_name: xray-vpn
     restart: always
     network_mode: host
+    environment:
+      XRAY_LOCATION_ASSET: /usr/local/share/xray
     volumes:
       - ./xray-vpn/config.json:/usr/local/etc/xray/config.json:ro
+      - ./xray-vpn/geosite.dat:/usr/local/share/xray/geosite.dat:ro
 
   remnanode:
     environment:

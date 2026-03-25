@@ -84,6 +84,55 @@ sudo bash /root/install_node_vpn.sh
 - **1) Установить**: установка ноды как обычно + создание/запуск `xray-vpn`
 - **2) Редактировать VPN**: вставляете ссылку подписки (`https://...`) или `vless://...`, выбираете нужный VLESS, скрипт обновляет `/opt/remnawave/xray-vpn/config.json` и перезапускает `xray-vpn`
 
+### Обязательные настройки профиля Remnawave (чтобы работал `xray-vpn`)
+
+Идея такая: **Remnawave Node** отправляет трафик “наружу” в локальный `xray-vpn` по SOCKS (`127.0.0.1:1080`), а уже `xray-vpn` решает, что вести через VPN, а что — напрямую.
+
+В профиле Remnawave обязательно должны быть:
+
+- **`outbounds`**: 3 тега (важен регистр!)
+  - `VPNROUTER` — SOCKS на `127.0.0.1:1080`
+  - `DIRECT` — `freedom` (это “IP вашего сервера”)
+  - `BLOCK` — `blackhole`
+
+- **`routing.rules`**: пример “RU/SU/РФ напрямую, остальное через VPNROUTER”
+
+```json
+{
+  "outbounds": [
+    {
+      "tag": "VPNROUTER",
+      "protocol": "socks",
+      "settings": { "address": "127.0.0.1", "port": 1080 }
+    },
+    { "tag": "DIRECT", "protocol": "freedom" },
+    { "tag": "BLOCK", "protocol": "blackhole" }
+  ],
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {
+        "type": "field",
+        "domain": [
+          "regexp:^(.+\\\\.)?ru$",
+          "regexp:^(.+\\\\.)?su$",
+          "regexp:^(.+\\\\.)?xn--p1ai$"
+        ],
+        "outboundTag": "DIRECT"
+      },
+      { "type": "field", "ip": ["geoip:private"], "outboundTag": "DIRECT" },
+      { "type": "field", "protocol": ["bittorrent"], "outboundTag": "BLOCK" },
+      { "type": "field", "network": "tcp,udp", "outboundTag": "VPNROUTER" }
+    ]
+  }
+}
+```
+
+Примечания:
+- `DIRECT` **должен** быть `freedom`. Если сделать `DIRECT` = socks, “напрямую” уже не будет.
+- В `routing` используйте **ровно те же теги**, что в `outbounds` (например `BLOCK`, а не `block`).
+- В качестве входящего (`inbounds`) можно использовать ваш Reality‑вход, например `W_EH.VK` (как в вашем профиле).
+
 ### Перед установкой:
 1. Создайте поддомен для ноды (например: `node.example.com`)
 2. Настройте A-запись в DNS, чтобы она указывала на IP вашего сервера

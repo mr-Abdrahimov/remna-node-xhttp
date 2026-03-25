@@ -12,6 +12,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BASE_INSTALL_SCRIPT="${SCRIPT_DIR}/install_node.sh"
+# Where the base installer is published (same repo as README).
+BASE_INSTALL_URL="https://raw.githubusercontent.com/mr-Abdrahimov/remna-node-xhttp/refs/heads/main/install_node.sh"
 
 REMNA_DIR="/opt/remnawave"
 XRAY_DIR="${REMNA_DIR}/xray-vpn"
@@ -43,8 +45,14 @@ check_prereqs() {
   fi
 
   if [[ ! -f "$BASE_INSTALL_SCRIPT" ]]; then
-    echo "Base installer not found: $BASE_INSTALL_SCRIPT"
-    exit 1
+    # If user runs this script from a directory without install_node.sh,
+    # fetch base installer automatically.
+    if [[ -f "./install_node.sh" ]]; then
+      BASE_INSTALL_SCRIPT="./install_node.sh"
+    else
+      echo "Base installer not found locally. Downloading..."
+      curl -fsSL "$BASE_INSTALL_URL" -o "$BASE_INSTALL_SCRIPT"
+    fi
   fi
 
   if ! command -v docker >/dev/null 2>&1; then

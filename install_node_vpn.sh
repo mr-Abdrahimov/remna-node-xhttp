@@ -514,6 +514,37 @@ edit_vpn_flow() {
   say "Готово. xray-vpn перезапущен."
 }
 
+choose_vpn_during_install() {
+  say ""
+  say "VPN для xray-vpn:"
+  say "- Вставьте ссылку подписки (https://...) или vless://..."
+  say "- Или просто нажмите Enter, чтобы оставить VPN по умолчанию."
+  read -r input || true
+
+  if [[ -z "${input:-}" ]]; then
+    say "Оставляем VPN по умолчанию."
+    return 0
+  fi
+
+  local list
+  list="$(pick_vless_from_input "$input")"
+  [[ "$list" != "NO_VLESS" ]] || die "Не найдено vless:// ссылок."
+
+  say ""
+  say "Доступные VLESS:"
+  echo "$list" | awk -F'\t' '{printf "%s) %s\n", $1, $2}'
+  say ""
+  read -r -p "Номер: " choice
+  [[ "$choice" =~ ^[0-9]+$ ]] || die "Неверный номер."
+
+  local picked
+  picked="$(echo "$list" | awk -F'\t' -v n="$choice" '$1==n{print $3; exit}')"
+  [[ -n "${picked:-}" ]] || die "Не найдено подключение с номером $choice."
+
+  say "Выбрано: $(echo "$list" | awk -F'\t' -v n="$choice" '$1==n{print $2; exit}')"
+  apply_vless_to_xray_config "$picked"
+}
+
 install_flow() {
   check_prereqs_install
 
@@ -530,6 +561,7 @@ install_flow() {
   cd "$REMNA_DIR"
 
   generate_xray_config
+  choose_vpn_during_install
   write_remnanode_proxy_env
   generate_compose_override
 

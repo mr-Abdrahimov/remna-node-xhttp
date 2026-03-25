@@ -397,6 +397,12 @@ if spx is not None:
 
 json.dump(cfg, open(config_path, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
 print("UPDATED")
+print(f"VPN address: {host}:{port}")
+print(f"flow: {flow or ''}")
+print(f"sni(serverName): {sni or ''}")
+print(f"fp: {fp or ''}")
+print(f"pbk(publicKey): {(pbk or '')[:12]}...")
+print(f"sid(shortId): {sid if sid is not None else '(missing)'}")
 PY
 }
 
@@ -498,6 +504,7 @@ edit_vpn_flow() {
   [[ -n "${picked:-}" ]] || die "Не найдено подключение с номером $choice."
 
   say "Обновляю xray-vpn конфиг..."
+  say "Выбрано: $(echo "$list" | awk -F'\t' -v n="$choice" '$1==n{print $2; exit}')"
   apply_vless_to_xray_config "$picked"
   restart_xray
   say "Готово. xray-vpn перезапущен."

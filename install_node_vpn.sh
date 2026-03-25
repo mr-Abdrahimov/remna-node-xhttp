@@ -53,6 +53,36 @@ no_proxy=localhost,127.0.0.1
 EOF
 }
 
+ensure_docker() {
+  if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+    return 0
+  fi
+
+  echo "Docker is not available. Installing/starting Docker..."
+
+  # Minimal deps for get.docker.com
+  if command -v apt-get >/dev/null 2>&1; then
+    apt-get update -y >/dev/null 2>&1 || true
+    apt-get install -y ca-certificates curl >/dev/null 2>&1 || true
+  fi
+
+  curl -fsSL https://get.docker.com -o /tmp/get-docker.sh
+  sh /tmp/get-docker.sh
+
+  if command -v systemctl >/dev/null 2>&1; then
+    systemctl enable --now docker >/dev/null 2>&1 || true
+  fi
+
+  if ! command -v docker >/dev/null 2>&1; then
+    echo "Docker install failed (docker binary not found)."
+    exit 1
+  fi
+  if ! docker info >/dev/null 2>&1; then
+    echo "Docker is installed but not working (docker info failed)."
+    exit 1
+  fi
+}
+
 check_prereqs() {
   if [[ $EUID -ne 0 ]]; then
     echo "Run as root (sudo)."
@@ -75,10 +105,7 @@ check_prereqs() {
     exit 1
   fi
 
-  if ! command -v docker >/dev/null 2>&1; then
-    echo "Docker not found."
-    exit 1
-  fi
+  ensure_docker
 
   if ! docker compose version >/dev/null 2>&1; then
     echo "docker compose not available (upgrade Docker / CLI)."

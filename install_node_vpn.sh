@@ -17,8 +17,6 @@ BASE_INSTALL_URL="https://raw.githubusercontent.com/mr-Abdrahimov/remna-node-xht
 
 REMNA_DIR="/opt/remnawave"
 XRAY_DIR="${REMNA_DIR}/xray-vpn"
-DOMAIN_LIST_URL="https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Russia/inside-raw.lst"
-DOMAIN_LIST_FILE="${XRAY_DIR}/inside-raw.lst"
 GEOSITE_URL="https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat"
 GEOSITE_FILE="${XRAY_DIR}/geosite.dat"
 GEOIP_URL="https://github.com/v2fly/geoip/releases/download/202501090053/geoip.dat"
@@ -83,26 +81,23 @@ check_prereqs() {
 generate_xray_config() {
   mkdir -p "$XRAY_DIR"
 
-  echo "Downloading domain list..."
-  curl -fsSL "$DOMAIN_LIST_URL" -o "$DOMAIN_LIST_FILE"
+  # Optional assets (not required for the RU/SU/RF split routing below).
+  # Keeping downloads best-effort and non-fatal.
+  echo "Downloading geosite database (optional)..."
+  curl -fsSL --retry 3 --retry-delay 2 "$GEOSITE_URL" -o "$GEOSITE_FILE" || true
 
-  echo "Downloading geosite database (dlc.dat)..."
-  curl -fsSL "$GEOSITE_URL" -o "$GEOSITE_FILE"
-
-  echo "Downloading geoip database (geoip.dat)..."
-  curl -fsSL "$GEOIP_URL" -o "$GEOIP_FILE"
+  echo "Downloading geoip database (optional)..."
+  curl -fsSL --retry 3 --retry-delay 2 "$GEOIP_URL" -o "$GEOIP_FILE" || true
 
   echo "Generating Xray-core config..."
-  export DOMAIN_LIST_FILE XRAY_DIR
+  export XRAY_DIR
   export VLESS_UUID VLESS_HOST VLESS_PORT VLESS_FLOW REALITY_FP REALITY_SNI REALITY_PBK REALITY_SID REALITY_SPX
   export SOCKS_LISTEN SOCKS_PORT HTTP_LISTEN HTTP_PORT
   python3 - <<'PY'
 import json
 import os
-import re
 from pathlib import Path
 
-domain_list_file = os.environ["DOMAIN_LIST_FILE"]
 xray_dir = os.environ["XRAY_DIR"]
 
 uuid = os.environ["VLESS_UUID"]
@@ -120,24 +115,6 @@ socks_port = int(os.environ["SOCKS_PORT"])
 http_listen = os.environ["HTTP_LISTEN"]
 http_port = int(os.environ["HTTP_PORT"])
 
-domains = set()
-with open(domain_list_file, "r", encoding="utf-8", errors="ignore") as f:
-    for raw in f:
-        d = raw.strip()
-        if not d or d.startswith("#"):
-            continue
-        # The list may contain leading dots (e.g. ".ua"); normalize them.
-        d = d.lstrip(".")
-        if not d:
-            continue
-        # Basic sanity: allow only typical domain characters.
-        if not re.match(r"^[A-Za-z0-9.-]+$", d):
-            continue
-        domains.add(d)
-
-domains_list = sorted(domains)
-domain_matchers = [f"domain:{d}" for d in domains_list]
-
 cfg = {
     "log": {"loglevel": "warning"},
     "inbounds": [
@@ -147,7 +124,10 @@ cfg = {
             "port": socks_port,
             "protocol": "socks",
             "auth": "noauth",
-            "settings": {"udp": False},
+            "settings": {
+                "udp": True,
+                "ip": socks_listen
+            },
             "sniffing": {
                 "enabled": True,
                 "destOverride": ["http", "tls", "quic"],
@@ -168,7 +148,6 @@ cfg = {
         }
     ],
     "outbounds": [
-        {"tag": "DIRECT", "protocol": "freedom"},
         {
             "tag": "VPN",
             "protocol": "vless",
@@ -198,20 +177,26 @@ cfg = {
                     "spiderX": spx
                 }
             }
-        }
+        },
+        {"tag": "DIRECT", "protocol": "freedom"}
     ],
     "routing": {
         "domainStrategy": "IPIfNonMatch",
         "rules": [
             {
                 "type": "field",
-                "domain": ["geosite:discord"],
-                "outboundTag": "VPN"
+                "domain": [
+                    # Direct for .ru / .su / .рф (punycode: xn--p1ai) and their subdomains.
+                    "regexp:(^|\\\\.)ru$",
+                    "regexp:(^|\\\\.)su$",
+                    "regexp:(^|\\\\.)xn--p1ai$"
+                ],
+                "outboundTag": "DIRECT"
             },
             {
                 "type": "field",
-                "domain": domain_matchers,
-                "outboundTag": "VPN"
+                "ip": ["geoip:private"],
+                "outboundTag": "DIRECT"
             }
         ]
     }

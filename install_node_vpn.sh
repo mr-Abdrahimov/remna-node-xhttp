@@ -270,7 +270,7 @@ services:
       - ./xray-vpn/config.json:/usr/local/etc/xray/config.json:ro
       - ./xray-vpn/geosite.dat:/usr/local/share/xray/geosite.dat:ro
       - ./xray-vpn/geoip.dat:/usr/local/share/xray/geoip.dat:ro
-    command: ["xray", "run", "-c", "/usr/local/etc/xray/config.json"]
+    command: ["run", "-c", "/usr/local/etc/xray/config.json"]
 
   remnanode:
     # Some compose versions error if override service lacks image/build.

@@ -40,6 +40,37 @@ SOCKS_PORT="1080"
 HTTP_LISTEN="127.0.0.1"
 HTTP_PORT="1081"
 
+say() { printf '%s\n' "$*"; }
+die() { say "$*"; exit 1; }
+
+need_root() {
+  if [[ ${EUID:-0} -ne 0 ]]; then
+    die "Run as root (sudo)."
+  fi
+}
+
+ensure_python3() {
+  if command -v python3 >/dev/null 2>&1; then
+    return 0
+  fi
+  if command -v apt-get >/dev/null 2>&1; then
+    apt-get update -y >/dev/null 2>&1 || true
+    apt-get install -y python3 >/dev/null 2>&1 || true
+  fi
+  command -v python3 >/dev/null 2>&1 || die "python3 not found."
+}
+
+ensure_curl() {
+  if command -v curl >/dev/null 2>&1; then
+    return 0
+  fi
+  if command -v apt-get >/dev/null 2>&1; then
+    apt-get update -y >/dev/null 2>&1 || true
+    apt-get install -y curl ca-certificates >/dev/null 2>&1 || true
+  fi
+  command -v curl >/dev/null 2>&1 || die "curl not found."
+}
+
 write_remnanode_proxy_env() {
   mkdir -p "$XRAY_DIR"
   cat > "${XRAY_DIR}/remnanode-proxy.env" <<EOF
@@ -83,10 +114,13 @@ ensure_docker() {
   fi
 }
 
-check_prereqs() {
-  if [[ $EUID -ne 0 ]]; then
-    echo "Run as root (sudo)."
-    exit 1
+ensure_docker_compose() {
+  docker compose version >/dev/null 2>&1 || die "docker compose not available (upgrade Docker / CLI)."
+}
+
+ensure_base_installer() {
+  if [[ -f "$BASE_INSTALL_SCRIPT" ]]; then
+    return 0
   fi
 
   if [[ ! -f "$BASE_INSTALL_SCRIPT" ]]; then
@@ -95,27 +129,34 @@ check_prereqs() {
     if [[ -f "./install_node.sh" ]]; then
       BASE_INSTALL_SCRIPT="./install_node.sh"
     else
-      echo "Base installer not found. Downloading from $BASE_INSTALL_URL ..."
+      say "Base installer not found. Downloading from $BASE_INSTALL_URL ..."
       curl -fsSL --retry 3 --retry-delay 2 "$BASE_INSTALL_URL" -o "$BASE_INSTALL_SCRIPT"
     fi
   fi
 
   if [[ ! -f "$BASE_INSTALL_SCRIPT" ]]; then
-    echo "Failed to locate or download base installer: $BASE_INSTALL_SCRIPT"
-    exit 1
+    die "Failed to locate or download base installer: $BASE_INSTALL_SCRIPT"
   fi
+}
 
+check_prereqs_install() {
+  need_root
+  ensure_curl
   ensure_docker
+  ensure_docker_compose
+  ensure_python3
+  ensure_base_installer
+}
 
-  if ! docker compose version >/dev/null 2>&1; then
-    echo "docker compose not available (upgrade Docker / CLI)."
-    exit 1
-  fi
-
-  if ! command -v curl >/dev/null 2>&1; then
-    echo "curl not found."
-    exit 1
-  fi
+check_prereqs_edit() {
+  need_root
+  ensure_curl
+  ensure_docker
+  ensure_docker_compose
+  ensure_python3
+  [[ -d "$REMNA_DIR" ]] || die "Not found: $REMNA_DIR"
+  [[ -f "$REMNA_DIR/docker-compose.yml" ]] || die "Not found: $REMNA_DIR/docker-compose.yml"
+  [[ -f "$XRAY_DIR/config.json" ]] || die "Not found: $XRAY_DIR/config.json (run Install first)"
 }
 
 generate_xray_config() {
@@ -280,39 +321,223 @@ services:
 EOF
 }
 
-main() {
-  check_prereqs
+apply_vless_to_xray_config() {
+  local vless_link="$1"
+  python3 - "$XRAY_DIR/config.json" "$vless_link" <<'PY'
+import json
+import sys
+from urllib.parse import urlparse, parse_qs
 
-  echo "Running base installer (install_node.sh)..."
-  # The base installer sometimes exits non-zero during the "node check" stage
-  # even though containers may already be up. We keep going to finish VPN setup.
+config_path = sys.argv[1]
+link = sys.argv[2].strip()
+
+u = urlparse(link)
+if u.scheme.lower() != "vless":
+    raise SystemExit("Not a vless:// link")
+
+uuid = u.username
+host = u.hostname
+port = u.port or 443
+qs = parse_qs(u.query)
+
+def q1(key, default=None):
+    v = qs.get(key)
+    if not v:
+        return default
+    return v[0]
+
+flow = q1("flow")
+fp = q1("fp")
+sni = q1("sni")
+pbk = q1("pbk")
+sid = q1("sid")
+spx = q1("spx", "/")
+
+cfg = json.load(open(config_path, "r", encoding="utf-8"))
+vpn = None
+for o in cfg.get("outbounds", []):
+    if o.get("tag") == "VPN":
+        vpn = o
+        break
+if vpn is None:
+    raise SystemExit("Outbound tag VPN not found in config")
+
+vpn.setdefault("settings", {}).setdefault("vnext", [{}])
+vnext0 = vpn["settings"]["vnext"][0]
+vnext0["address"] = host
+vnext0["port"] = int(port)
+vnext0.setdefault("users", [{}])
+user0 = vnext0["users"][0]
+user0["id"] = uuid
+user0["encryption"] = "none"
+if flow:
+    user0["flow"] = flow
+
+ss = vpn.setdefault("streamSettings", {})
+ss["network"] = "tcp"
+ss["security"] = "reality"
+rs = ss.setdefault("realitySettings", {})
+if fp:
+    rs["fingerprint"] = fp
+if sni:
+    rs["serverName"] = sni
+if pbk:
+    rs["publicKey"] = pbk
+if sid:
+    rs["shortId"] = sid
+if spx is not None:
+    rs["spiderX"] = spx
+
+json.dump(cfg, open(config_path, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+print("UPDATED")
+PY
+}
+
+pick_vless_from_input() {
+  local input="$1"
+  python3 - "$input" <<'PY'
+import base64
+import re
+import sys
+from urllib.parse import unquote
+
+inp = sys.argv[1].strip()
+
+def fetch(url: str) -> str:
+    import urllib.request
+    with urllib.request.urlopen(url, timeout=20) as r:
+        return r.read().decode("utf-8", "ignore")
+
+text = inp
+if re.match(r"^https?://", inp, re.I):
+    text = fetch(inp)
+
+raw = text.strip().encode()
+
+def maybe_b64decode(b: bytes):
+    for fn in (base64.b64decode, base64.urlsafe_b64decode):
+        try:
+            dec = fn(b + b"===")
+            if b"vless://" in dec:
+                return dec.decode("utf-8", "ignore")
+        except Exception:
+            pass
+    return None
+
+decoded = None
+if re.fullmatch(rb"[A-Za-z0-9+/=\r\n_-]+", raw) and b"vless://" not in raw:
+    decoded = maybe_b64decode(raw)
+if decoded is not None:
+    text = decoded
+
+links = []
+for line in text.splitlines():
+    for m in re.finditer(r"(vless://[^\s]+)", line.strip()):
+        links.append(m.group(1))
+
+seen = set()
+vless = []
+for l in links:
+    if l not in seen:
+        seen.add(l)
+        vless.append(l)
+
+if not vless:
+    print("NO_VLESS")
+    sys.exit(0)
+
+def label(link: str) -> str:
+    if "#" in link:
+        frag = link.split("#", 1)[1]
+        try:
+            frag = unquote(frag)
+        except Exception:
+            pass
+        frag = frag.strip()
+        if frag:
+            return frag
+    m = re.search(r"@([^/?#]+)", link)
+    return m.group(1) if m else link[:60]
+
+for i, l in enumerate(vless, 1):
+    print(f"{i}\t{label(l)}\t{l}")
+PY
+}
+
+restart_xray() {
+  cd "$REMNA_DIR"
+  docker compose -f docker-compose.yml -f docker-compose.vpn.yml up -d xray-vpn >/dev/null
+}
+
+edit_vpn_flow() {
+  check_prereqs_edit
+  say "Вставьте ссылку подписки (https://...) или vless://..."
+  read -r input
+  [[ -n "${input:-}" ]] || die "Empty input."
+
+  local list
+  list="$(pick_vless_from_input "$input")"
+  [[ "$list" != "NO_VLESS" ]] || die "Не найдено vless:// ссылок."
+
+  say ""
+  say "Доступные VLESS:"
+  echo "$list" | awk -F'\t' '{printf "%s) %s\n", $1, $2}'
+  say ""
+  read -r -p "Номер: " choice
+  [[ "$choice" =~ ^[0-9]+$ ]] || die "Неверный номер."
+
+  local picked
+  picked="$(echo "$list" | awk -F'\t' -v n="$choice" '$1==n{print $3; exit}')"
+  [[ -n "${picked:-}" ]] || die "Не найдено подключение с номером $choice."
+
+  say "Обновляю xray-vpn конфиг..."
+  apply_vless_to_xray_config "$picked"
+  restart_xray
+  say "Готово. xray-vpn перезапущен."
+}
+
+install_flow() {
+  check_prereqs_install
+
+  say "Running base installer (install_node.sh)..."
   set +e
   bash "$BASE_INSTALL_SCRIPT"
   base_install_exit_code=$?
   set -e
   if [[ $base_install_exit_code -ne 0 ]]; then
-    echo "Warning: base installer exited with code $base_install_exit_code. Continuing with VPN setup..."
+    say "Warning: base installer exited with code $base_install_exit_code. Continuing with VPN setup..."
   fi
 
-  if [[ ! -d "$REMNA_DIR" ]]; then
-    echo "Expected directory not found: $REMNA_DIR"
-    exit 1
-  fi
-
+  [[ -d "$REMNA_DIR" ]] || die "Expected directory not found: $REMNA_DIR"
   cd "$REMNA_DIR"
 
   generate_xray_config
   write_remnanode_proxy_env
   generate_compose_override
 
-  echo "Starting xray-vpn and applying proxy settings..."
+  say "Starting xray-vpn and applying proxy settings..."
   docker compose -f docker-compose.yml -f docker-compose.vpn.yml up -d
-
-  echo "Done."
-  echo "You can check logs:"
-  echo "  docker compose -f docker-compose.yml -f docker-compose.vpn.yml logs -f remnanode"
-  echo "  docker compose -f docker-compose.yml -f docker-compose.vpn.yml logs -f xray-vpn"
+  say "Done."
 }
 
-main "$@"
+main_menu() {
+  need_root
+  ensure_curl
+  ensure_python3
+  ensure_docker
+  ensure_docker_compose
+
+  say ""
+  say "1) Установить"
+  say "2) Редактировать VPN"
+  say ""
+  read -r -p "Выбор (1-2): " choice
+  case "$choice" in
+    1) install_flow ;;
+    2) edit_vpn_flow ;;
+    *) die "Неверный выбор." ;;
+  esac
+}
+
+main_menu "$@"
 

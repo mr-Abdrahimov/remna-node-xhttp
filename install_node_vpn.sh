@@ -479,7 +479,11 @@ PY
 
 restart_xray() {
   cd "$REMNA_DIR"
-  docker compose -f docker-compose.yml -f docker-compose.vpn.yml up -d xray-vpn >/dev/null
+  # Ensure Xray reloads the updated config.json:
+  # - restart: fast path
+  # - force-recreate: guarantees a fresh process/container if restart isn't enough
+  docker compose -f docker-compose.yml -f docker-compose.vpn.yml restart xray-vpn >/dev/null 2>&1 || true
+  docker compose -f docker-compose.yml -f docker-compose.vpn.yml up -d --force-recreate xray-vpn >/dev/null
 }
 
 edit_vpn_flow() {

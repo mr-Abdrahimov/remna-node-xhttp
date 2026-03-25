@@ -21,6 +21,8 @@ DOMAIN_LIST_URL="https://raw.githubusercontent.com/itdoginfo/allow-domains/main/
 DOMAIN_LIST_FILE="${XRAY_DIR}/inside-raw.lst"
 GEOSITE_URL="https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat"
 GEOSITE_FILE="${XRAY_DIR}/geosite.dat"
+GEOIP_URL="https://github.com/v2fly/geoip/releases/download/202501090053/geoip.dat"
+GEOIP_FILE="${XRAY_DIR}/geoip.dat"
 
 OVERRIDE_COMPOSE_FILE="${REMNA_DIR}/docker-compose.vpn.yml"
 
@@ -86,6 +88,9 @@ generate_xray_config() {
 
   echo "Downloading geosite database (dlc.dat)..."
   curl -fsSL "$GEOSITE_URL" -o "$GEOSITE_FILE"
+
+  echo "Downloading geoip database (geoip.dat)..."
+  curl -fsSL "$GEOIP_URL" -o "$GEOIP_FILE"
 
   echo "Generating Xray-core config..."
   export DOMAIN_LIST_FILE XRAY_DIR
@@ -196,7 +201,7 @@ cfg = {
         }
     ],
     "routing": {
-        "domainStrategy": "AsIs",
+        "domainStrategy": "IPIfNonMatch",
         "rules": [
             {
                 "type": "field",
@@ -233,6 +238,7 @@ services:
     volumes:
       - ./xray-vpn/config.json:/usr/local/etc/xray/config.json:ro
       - ./xray-vpn/geosite.dat:/usr/local/share/xray/geosite.dat:ro
+      - ./xray-vpn/geoip.dat:/usr/local/share/xray/geoip.dat:ro
 
   remnanode:
     environment:

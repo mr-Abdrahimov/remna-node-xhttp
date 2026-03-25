@@ -50,9 +50,14 @@ check_prereqs() {
     if [[ -f "./install_node.sh" ]]; then
       BASE_INSTALL_SCRIPT="./install_node.sh"
     else
-      echo "Base installer not found locally. Downloading..."
-      curl -fsSL "$BASE_INSTALL_URL" -o "$BASE_INSTALL_SCRIPT"
+      echo "Base installer not found. Downloading from $BASE_INSTALL_URL ..."
+      curl -fsSL --retry 3 --retry-delay 2 "$BASE_INSTALL_URL" -o "$BASE_INSTALL_SCRIPT"
     fi
+  fi
+
+  if [[ ! -f "$BASE_INSTALL_SCRIPT" ]]; then
+    echo "Failed to locate or download base installer: $BASE_INSTALL_SCRIPT"
+    exit 1
   fi
 
   if ! command -v docker >/dev/null 2>&1; then
@@ -232,7 +237,15 @@ main() {
   check_prereqs
 
   echo "Running base installer (install_node.sh)..."
+  # The base installer sometimes exits non-zero during the "node check" stage
+  # even though containers may already be up. We keep going to finish VPN setup.
+  set +e
   bash "$BASE_INSTALL_SCRIPT"
+  base_install_exit_code=$?
+  set -e
+  if [[ $base_install_exit_code -ne 0 ]]; then
+    echo "Warning: base installer exited with code $base_install_exit_code. Continuing with VPN setup..."
+  fi
 
   if [[ ! -d "$REMNA_DIR" ]]; then
     echo "Expected directory not found: $REMNA_DIR"

@@ -187,15 +187,20 @@ cfg = {
                 "type": "field",
                 "domain": [
                     # Direct for .ru / .su / .рф (punycode: xn--p1ai) and their subdomains.
-                    "regexp:(^|\\\\.)ru$",
-                    "regexp:(^|\\\\.)su$",
-                    "regexp:(^|\\\\.)xn--p1ai$"
+                    "regexp:.*\\\\.ru$",
+                    "regexp:.*\\\\.su$",
+                    "regexp:.*\\\\.xn--p1ai$"
                 ],
                 "outboundTag": "DIRECT"
             },
             {
                 "type": "field",
                 "ip": ["geoip:private"],
+                "outboundTag": "DIRECT"
+            },
+            {
+                "type": "field",
+                "ip": ["geoip:ru"],
                 "outboundTag": "DIRECT"
             }
         ]

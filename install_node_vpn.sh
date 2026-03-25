@@ -40,6 +40,19 @@ SOCKS_PORT="1080"
 HTTP_LISTEN="127.0.0.1"
 HTTP_PORT="1081"
 
+write_remnanode_proxy_env() {
+  mkdir -p "$XRAY_DIR"
+  cat > "${XRAY_DIR}/remnanode-proxy.env" <<EOF
+HTTP_PROXY=http://${SOCKS_LISTEN}:${HTTP_PORT}
+HTTPS_PROXY=http://${SOCKS_LISTEN}:${HTTP_PORT}
+http_proxy=http://${SOCKS_LISTEN}:${HTTP_PORT}
+https_proxy=http://${SOCKS_LISTEN}:${HTTP_PORT}
+ALL_PROXY=socks5://${SOCKS_LISTEN}:${SOCKS_PORT}
+NO_PROXY=localhost,127.0.0.1
+no_proxy=localhost,127.0.0.1
+EOF
+}
+
 check_prereqs() {
   if [[ $EUID -ne 0 ]]; then
     echo "Run as root (sudo)."
@@ -233,14 +246,10 @@ services:
     command: ["xray", "run", "-c", "/usr/local/etc/xray/config.json"]
 
   remnanode:
-    environment:
-      HTTP_PROXY: "http://${SOCKS_LISTEN}:${HTTP_PORT}"
-      HTTPS_PROXY: "http://${SOCKS_LISTEN}:${HTTP_PORT}"
-      http_proxy: "http://${SOCKS_LISTEN}:${HTTP_PORT}"
-      https_proxy: "http://${SOCKS_LISTEN}:${HTTP_PORT}"
-      ALL_PROXY: "socks5://${SOCKS_LISTEN}:${SOCKS_PORT}"
-      no_proxy: "localhost,127.0.0.1"
-      NO_PROXY: "localhost,127.0.0.1"
+    # Some compose versions error if override service lacks image/build.
+    image: remnawave/node:latest
+    env_file:
+      - ./xray-vpn/remnanode-proxy.env
 EOF
 }
 
@@ -266,6 +275,7 @@ main() {
   cd "$REMNA_DIR"
 
   generate_xray_config
+  write_remnanode_proxy_env
   generate_compose_override
 
   echo "Starting xray-vpn and applying proxy settings..."

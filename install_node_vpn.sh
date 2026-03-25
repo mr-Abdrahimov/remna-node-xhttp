@@ -186,22 +186,26 @@ cfg = {
             {
                 "type": "field",
                 "domain": [
+                    "full:2ip.ru",
                     # Direct for .ru / .su / .рф (punycode: xn--p1ai) and their subdomains.
-                    "regexp:.*\\\\.ru$",
-                    "regexp:.*\\\\.su$",
-                    "regexp:.*\\\\.xn--p1ai$"
+                    "regexp:^(.+\\\\.)?ru$",
+                    "regexp:^(.+\\\\.)?su$",
+                    "regexp:^(.+\\\\.)?xn--p1ai$"
                 ],
-                "outboundTag": "DIRECT"
+                "outboundTag": "DIRECT",
+                "ruleTag": "direct-ru-tlds"
             },
             {
                 "type": "field",
                 "ip": ["geoip:private"],
-                "outboundTag": "DIRECT"
+                "outboundTag": "DIRECT",
+                "ruleTag": "direct-private"
             },
             {
                 "type": "field",
                 "ip": ["geoip:ru"],
-                "outboundTag": "DIRECT"
+                "outboundTag": "DIRECT",
+                "ruleTag": "direct-geoip-ru"
             }
         ]
     }

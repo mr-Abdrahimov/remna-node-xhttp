@@ -81,13 +81,11 @@ check_prereqs() {
 generate_xray_config() {
   mkdir -p "$XRAY_DIR"
 
-  # Optional assets (not required for the RU/SU/RF split routing below).
-  # Keeping downloads best-effort and non-fatal.
-  echo "Downloading geosite database (optional)..."
-  curl -fsSL --retry 3 --retry-delay 2 "$GEOSITE_URL" -o "$GEOSITE_FILE" || true
+  echo "Downloading geosite database (dlc.dat -> geosite.dat)..."
+  curl -fsSL --retry 3 --retry-delay 2 "$GEOSITE_URL" -o "$GEOSITE_FILE"
 
-  echo "Downloading geoip database (optional)..."
-  curl -fsSL --retry 3 --retry-delay 2 "$GEOIP_URL" -o "$GEOIP_FILE" || true
+  echo "Downloading geoip database (geoip.dat)..."
+  curl -fsSL --retry 3 --retry-delay 2 "$GEOIP_URL" -o "$GEOIP_FILE"
 
   echo "Generating Xray-core config..."
   export XRAY_DIR
@@ -186,14 +184,13 @@ cfg = {
             {
                 "type": "field",
                 "domain": [
-                    "full:2ip.ru",
-                    # Direct for .ru / .su / .рф (punycode: xn--p1ai) and their subdomains.
-                    "regexp:^(.+\\\\.)?ru$",
-                    "regexp:^(.+\\\\.)?su$",
-                    "regexp:^(.+\\\\.)?xn--p1ai$"
+                    # Domain-list-community (dlc.dat) groups for Russian destinations.
+                    # Names are provided by v2fly/domain-list-community.
+                    "geosite:geolocation-ru",
+                    "geosite:category-ru"
                 ],
                 "outboundTag": "DIRECT",
-                "ruleTag": "direct-ru-tlds"
+                "ruleTag": "direct-geosite-ru"
             },
             {
                 "type": "field",

@@ -1093,6 +1093,8 @@ installation_node() {
       - SECRET_KEY=$(echo -e "$CERTIFICATE")
     volumes:
       - /dev/shm:/dev/shm:rw
+      - /etc/letsencrypt/live/$NODE_CERT_DOMAIN/fullchain.pem:/var/lib/remnawave/configs/xray/ssl/cert.pem:ro
+      - /etc/letsencrypt/live/$NODE_CERT_DOMAIN/privkey.pem:/var/lib/remnawave/configs/xray/ssl/cert.key:ro
     logging:
       driver: 'json-file'
       options:

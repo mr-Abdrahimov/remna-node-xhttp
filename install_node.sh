@@ -1180,7 +1180,12 @@ EOL
             if [ $attempt -eq $max_attempts ]; then
                 printf "${COLOR_RED}${LANG[NODE_NOT_CONNECTED]}${COLOR_RESET}\n" "$max_attempts"
                 echo -e "${COLOR_YELLOW}${LANG[CHECK_CONFIG]}${COLOR_RESET}"
-                exit 1
+                echo -e "${COLOR_YELLOW}Продолжить установку несмотря на недоступность ноды? (y/N)${COLOR_RESET}"
+                read continue_install
+                if [[ ! "$continue_install" =~ ^[Yy]$ ]]; then
+                    exit 1
+                fi
+                break
             fi
             sleep $delay
         fi

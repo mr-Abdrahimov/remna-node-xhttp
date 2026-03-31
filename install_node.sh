@@ -1102,6 +1102,12 @@ installation_node() {
         max-file: '5'
 EOL
 
+    mkdir -p /etc/letsencrypt/renewal-hooks/deploy
+    cat > /etc/letsencrypt/renewal-hooks/deploy/restart-remnanode.sh <<'EOF'
+#!/bin/bash
+EOF
+    chmod +x /etc/letsencrypt/renewal-hooks/deploy/restart-remnanode.sh
+
 cat > /opt/remnawave/nginx.conf <<EOL
 server_names_hash_bucket_size 64;
 

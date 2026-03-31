@@ -1,5 +1,8 @@
 # 🚀 Remnawave Node + xHTTP
 
+**[Спасибо eGames](https://github.com/eGamesAPI)**  
+**[Спасибо Евгеньевич](https://www.youtube.com/@eevgenyevichh)**
+
 <div align="center">
 
 **Автоматическая установка ноды Remnawave с поддержкой xHTTP протокола**

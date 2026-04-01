@@ -1105,6 +1105,7 @@ EOL
     mkdir -p /etc/letsencrypt/renewal-hooks/deploy
     cat > /etc/letsencrypt/renewal-hooks/deploy/restart-remnanode.sh <<'EOF'
 #!/bin/bash
+cd /opt/remnawave && docker compose restart remnanode
 EOF
     chmod +x /etc/letsencrypt/renewal-hooks/deploy/restart-remnanode.sh
 
